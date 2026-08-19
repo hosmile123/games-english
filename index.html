@@ -142,6 +142,29 @@ label.fld{ font-size:13px; color:#666; display:block; margin:12px 0 4px;}
 #toast{ position:fixed; left:50%; bottom:30px; transform:translateX(-50%); background:rgba(0,0,0,.82); color:#fff; padding:10px 18px; border-radius:24px; font-size:14px; opacity:0; transition:opacity .25s; z-index:99; pointer-events:none; max-width:90%;}
 #toast.show{ opacity:1;}
 .muted-note{ color:var(--muted); font-size:12px; margin-top:10px; line-height:1.6;}
+
+/* ====== 登录页样式（按截图） ====== */
+.auth-input{ width:100%; padding:14px 16px; border-radius:12px; border:1.5px solid #e5e5e5; background:#fff; font-size:15px; margin-bottom:8px; box-sizing:border-box; transition:border-color .15s;}
+.auth-input:focus{ outline:none; border-color:var(--primary);}
+.auth-primary{ width:100%; padding:14px; border-radius:12px; border:none; background:var(--primary); color:#fff; font-size:16px; font-weight:700; cursor:pointer; margin-top:8px; transition:opacity .15s;}
+.auth-primary:active{ opacity:.85;}
+.auth-ghost{ flex:1; padding:12px; border-radius:12px; border:1.5px solid var(--primary); background:#fff; color:var(--primary); font-size:15px; font-weight:700; cursor:pointer;}
+.auth-gray{ flex:1; padding:12px; border-radius:12px; border:none; background:#f0f0f0; color:#666; font-size:15px; font-weight:700; cursor:pointer;}
+.auth-foot{ text-align:center; margin:16px 0 0; font-size:13px; color:#999;}
+.auth-foot a{ color:var(--primary); cursor:pointer; text-decoration:none; font-weight:700;}
+.auth-back{ text-align:center; margin:14px 0 0; font-size:13px;}
+.auth-back a{ color:var(--primary); cursor:pointer; text-decoration:none;}
+/* 验证码登录卡片 */
+.code-intro{ text-align:center; color:var(--text); font-size:13px; line-height:1.6; margin:8px 0 14px;}
+.code-display{ background:#f7f8fc; border-radius:16px; padding:24px 16px; margin:8px 0 14px; text-align:center;}
+.code-digits{ display:flex; justify-content:center; gap:10px; margin-bottom:14px; font-family:-apple-system,BlinkMacSystemFont,"Courier New",monospace; font-weight:800; color:var(--primary); font-size:48px; letter-spacing:6px; user-select:all; -webkit-user-select:all;}
+.code-digits .cd{ display:inline-block; min-width:30px;}
+.code-status{ color:#5b8def; font-size:14px; font-weight:600; margin:6px 0;}
+.code-status.waiting{ color:#5b8def; animation:pulse 1.5s ease-in-out infinite;}
+.code-timer{ color:var(--muted); font-size:12px; margin-top:6px;}
+.code-tip{ text-align:center; color:var(--muted); font-size:12px; margin-top:8px; line-height:1.5;}
+.code-actions{ display:flex; gap:10px; margin:10px 0;}
+@keyframes pulse{ 0%,100%{ opacity:1;} 50%{ opacity:.4;} }
 .big-emoji{ font-size:30px;}
 .admin-table{ width:100%; border-collapse:collapse; font-size:13px; margin-top:8px;}
 .admin-table th, .admin-table td{ padding:6px 8px; border-bottom:1px solid #eee; text-align:left;}
@@ -160,12 +183,12 @@ label.fld{ font-size:13px; color:#666; display:block; margin:12px 0 4px;}
   <div class="auth-box">
     <h2 id="authTitle">🎮 游戏＋英语</h2>
     <p id="authSubtitle">登录后开启你的英语与游戏之旅</p>
-    <div class="auth-tabs">
+    <div class="auth-tabs" id="authTabs">
       <div class="auth-tab active" data-mode="login" onclick="authSwitch('login')">登录</div>
-      <div class="auth-tab" data-mode="register" onclick="authSwitch('register')">注册</div>
+      <div class="auth-tab" data-mode="code" onclick="authSwitch('code')">验证码登录</div>
     </div>
     <div id="authBody"></div>
-    <p class="muted-note">提示：第一个注册的用户自动成为管理员，可管理其他账号（改密 / 删除 / 生成邀请码 / 生成4位验证码）。</p>
+    <p class="auth-foot" id="authFoot" style="display:none">没有账户？<a onclick="authSwitch('register')">去注册</a></p>
   </div>
 </div>
 
@@ -177,6 +200,7 @@ label.fld{ font-size:13px; color:#666; display:block; margin:12px 0 4px;}
 <div class="user-bar" id="userBar" style="display:none">
   <span id="userName"></span><span class="role" id="userRole" style="display:none">管理员</span>
   <span class="who" id="userWho"></span>
+  <button class="btn ghost" id="mobileAuthBtn" onclick="openMobileAuth()">🔢 授权电脑</button>
   <button class="btn ghost" id="adminBtn" style="display:none" onclick="openAdminPanel()">⚙ 管理</button>
   <button class="btn gray" onclick="authLogout()">登出</button>
 </div>
@@ -1344,10 +1368,8 @@ function authGenCode4(){
   return String(Math.floor(1000+Math.random()*9000));
 }
 function authGenInvite(){
-  // 8 位字母数字邀请码
-  var s=''; var c='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  for(var i=0;i<8;i++) s+=c[Math.floor(Math.random()*c.length)];
-  return s;
+  // 6 位纯数字邀请码（管理员生成）
+  return String(Math.floor(100000 + Math.random() * 900000));
 }
 
 function authShow(){
@@ -1361,10 +1383,13 @@ function authShow(){
     document.getElementById('userRole').style.display = _currentRole==='admin' ? 'inline-block' : 'none';
     document.getElementById('userWho').textContent = _currentRole==='admin' ? '管理员' : '';
     document.getElementById('adminBtn').style.display = _currentRole==='admin' ? 'inline-block' : 'none';
+    // 启动手机端轮询：检测是否有电脑端等待授权
+    _startMobileAuthPoll();
   }else{
     _currentUser=null; _currentRole='user';
     document.getElementById('authMask').style.display='flex';
     document.getElementById('userBar').style.display='none';
+    _stopMobileAuthPoll();
     authSwitch('login');
   }
   // 重新挂载用户专属数据
@@ -1376,30 +1401,215 @@ function authShow(){
   renderDeckRow(); engRender(); renderLib(); renderEngStats();
   renderPlanCards();
 }
+
+/* ====== 手机端轮询：检测是否有电脑端等待授权 ====== */
+var _mobileAuthPollTimer = null;
+function _startMobileAuthPoll(){
+  if(_mobileAuthPollTimer) return;
+  _mobileAuthPollTimer = setInterval(_mobileAuthCheck, 8000);
+  _mobileAuthCheck();
+}
+function _stopMobileAuthPoll(){
+  if(_mobileAuthPollTimer){ clearInterval(_mobileAuthPollTimer); _mobileAuthPollTimer=null; }
+}
+function _mobileAuthCheck(){
+  if(!_currentUser) return;
+  var s = authLoad();
+  if(!s.pendingAuth) return;
+  var now = Date.now();
+  var hasWaiting = false;
+  Object.keys(s.pendingAuth).forEach(function(c){
+    var p = s.pendingAuth[c];
+    if(p.status==='waiting' && p.expires>now) hasWaiting = true;
+  });
+  if(hasWaiting && !document.getElementById('mAuthToast')) _showMobileAuthToast();
+}
+function _showMobileAuthToast(){
+  if(document.getElementById('mAuthToast')) return;
+  var t = document.createElement('div');
+  t.id = 'mAuthToast';
+  t.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#FF6B00;color:#fff;padding:10px 18px;border-radius:24px;font-size:14px;z-index:99999;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,.25);font-weight:700;max-width:90%;text-align:center';
+  t.innerHTML = '🔢 有电脑端请求授权，点击授权';
+  t.onclick = function(){ openMobileAuth(); t.remove(); };
+  document.body.appendChild(t);
+  setTimeout(function(){ if(t && t.parentNode) t.remove(); }, 12000);
+}
 function authSwitch(mode){
-  document.querySelectorAll('.auth-tab').forEach(function(t){ t.classList.toggle('active', t.dataset.mode===mode); });
+  // 注册模式：隐藏 tab 切换，只显示返回链接
+  var tabsEl = document.getElementById('authTabs');
+  var footEl = document.getElementById('authFoot');
+  if(mode==='register'){
+    tabsEl.style.display='none';
+    footEl.style.display='none';
+  }else{
+    tabsEl.style.display='flex';
+    footEl.style.display='block';
+    document.querySelectorAll('.auth-tab').forEach(function(t){ t.classList.toggle('active', t.dataset.mode===mode); });
+  }
   var body=document.getElementById('authBody');
   var s = authLoad();
   var userCount = s.users ? Object.keys(s.users).length : 0;
+
   if(mode==='login'){
     document.getElementById('authTitle').textContent = '🎮 游戏＋英语';
-    document.getElementById('authSubtitle').textContent = userCount ? '已有 '+userCount+' 个账号，请登录' : '首个注册用户自动成为管理员';
+    document.getElementById('authSubtitle').textContent = userCount ? '欢迎回来，请登录你的账号' : '首个注册的用户自动成为管理员';
     body.innerHTML =
-      '<label class="fld">账号</label><input id="loginU" autocomplete="username" placeholder="输入账号">'+
-      '<label class="fld">密码</label><input id="loginP" type="password" autocomplete="current-password" placeholder="输入密码">'+
-      '<button class="btn accent" style="width:100%;margin-top:14px" onclick="authDoLogin()">登录</button>'+
-      '<div style="text-align:center;margin:12px 0;color:#aaa;font-size:12px">或</div>'+
-      '<label class="fld">4 位验证码（管理员生成）</label><input id="loginC" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="输入 4 位数字">'+
-      '<button class="btn ghost" style="width:100%;margin-top:8px" onclick="authDoLoginByCode()">验证码登录</button>';
+      '<label class="fld">账号</label>'+
+      '<input id="loginU" class="auth-input" autocomplete="username" placeholder="请输入账号">'+
+      '<label class="fld">密码</label>'+
+      '<input id="loginP" class="auth-input" type="password" autocomplete="current-password" placeholder="请输入密码">'+
+      '<button class="btn auth-primary" onclick="authDoLogin()">登录</button>';
+    setTimeout(function(){ var u=document.getElementById('loginU'); if(u) u.focus(); }, 50);
+  }else if(mode==='code'){
+    document.getElementById('authTitle').textContent = '🎮 游戏＋英语';
+    document.getElementById('authSubtitle').textContent = '已注册用户可凭 4 位数字授权本机登录';
+    // 初始状态：显示"开始"按钮
+    body.innerHTML =
+      '<div class="code-intro">在手机工作台输入下方 4 位数字验证码，即可授权本机登录</div>'+
+      '<div class="code-display" id="codeDisplay">'+
+        '<div class="code-digits" id="codeDigits">— — — —</div>'+
+        '<div class="code-status" id="codeStatus">点击下方按钮开始</div>'+
+        '<div class="code-timer" id="codeTimer" style="display:none">剩余 <span id="codeSeconds">180</span> 秒</div>'+
+      '</div>'+
+      '<button class="btn auth-primary" id="codeStartBtn" onclick="authCodeStart()">开 始</button>'+
+      '<div class="code-tip">验证码 3 分钟内有效，请在手机端输入上方数字</div>';
   }else{
     document.getElementById('authTitle').textContent = userCount ? '📝 注册新账号' : '📝 注册首个管理员账号';
-    document.getElementById('authSubtitle').textContent = userCount ? '需要管理员生成的邀请码' : '你将自动成为管理员（首位注册）';
+    document.getElementById('authSubtitle').textContent = userCount ? '需要管理员生成的 6 位数字邀请码' : '你将自动成为管理员（首位注册）';
     body.innerHTML =
-      '<label class="fld">账号（3-20字符，字母数字下划线）</label><input id="regU" autocomplete="username" placeholder="如 alice">'+
-      '<label class="fld">密码（≥4位）</label><input id="regP" type="password" autocomplete="new-password" placeholder="设置密码">'+
-      '<label class="fld">确认密码</label><input id="regP2" type="password" placeholder="再次输入密码">'+
-      '<label class="fld">邀请码'+(userCount?'':'（首位可留空，将自动成为管理员）')+'</label><input id="regI" placeholder="'+(userCount?'向管理员索取邀请码':'留空或自填')+'">'+
-      '<button class="btn accent" style="width:100%;margin-top:14px" onclick="authDoRegister()">注册并登录</button>';
+      '<label class="fld">账号（3-20字符，字母+数字自由组合）</label>'+
+      '<input id="regU" class="auth-input" autocomplete="username" placeholder="如 alice2024">'+
+      '<label class="fld">密码（≥4位）</label>'+
+      '<input id="regP" class="auth-input" type="password" autocomplete="new-password" placeholder="设置密码">'+
+      '<label class="fld">确认密码</label>'+
+      '<input id="regP2" class="auth-input" type="password" placeholder="再次输入密码">'+
+      '<label class="fld">邀请码'+(userCount?'（6位数字）':'（首位可留空，将自动成为管理员）')+'</label>'+
+      '<input id="regI" class="auth-input" placeholder="'+(userCount?'向管理员索取 6 位数字邀请码':'留空或自填')+'">'+
+      '<button class="btn auth-primary" onclick="authDoRegister()">注册并登录</button>'+
+      '<p class="auth-back"><a onclick="authSwitch(\'login\')">← 返回登录</a></p>';
+    setTimeout(function(){ var u=document.getElementById('regU'); if(u) u.focus(); }, 50);
+  }
+}
+
+/* ====== 验证码登录：电脑端显示 4 位数字 + 轮询等待手机授权 ====== */
+var _authPollTimer = null;     // 轮询 timer
+var _authCurrentCode = null;   // 当前电脑端显示的 4 位码
+var _authCurrentDev = null;    // 当前电脑端的设备 ID
+var _authExpireAt = 0;         // 过期时间戳
+
+function _authDevId(){
+  // 生成 12 位设备 ID（足够避免冲突）
+  return 'dev_' + Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
+}
+function _authClearPolling(){
+  if(_authPollTimer){ clearInterval(_authPollTimer); _authPollTimer=null; }
+  _authCurrentCode=null; _authCurrentDev=null; _authExpireAt=0;
+}
+function authCodeStart(){
+  var s = authLoad();
+  // 清理过期的 pendingAuth / authorized
+  s.pendingAuth = s.pendingAuth || {};
+  s.authorized = s.authorized || {};
+  var now = Date.now();
+  Object.keys(s.pendingAuth).forEach(function(c){
+    if(s.pendingAuth[c].expires < now) delete s.pendingAuth[c];
+  });
+  // 生成新码
+  var code, dev;
+  do { code = authGenCode4(); } while(s.pendingAuth[code]);
+  dev = _authDevId();
+  s.pendingAuth[code] = { deviceId: dev, createdAt: now, expires: now + 3*60*1000, status: 'waiting' };
+  authSave(s);
+  _authCurrentCode = code;
+  _authCurrentDev = dev;
+  _authExpireAt = now + 3*60*1000;
+  _authRenderWaiting();
+  // 启动轮询：每 1.2 秒检查是否被授权
+  if(_authPollTimer) clearInterval(_authPollTimer);
+  _authPollTimer = setInterval(_authPoll, 1200);
+}
+function _authRenderWaiting(){
+  var body = document.getElementById('authBody');
+  if(!body) return;
+  body.innerHTML =
+    '<div class="code-intro">在手机工作台输入下方 4 位数字验证码，即可授权本机登录</div>'+
+    '<div class="code-display">'+
+      '<div class="code-digits">'+ _authCurrentCode.split('').map(function(c){ return '<span class="cd">'+c+'</span>'; }).join('') +'</div>'+
+      '<div class="code-status waiting">⏳ 等待手机授权...</div>'+
+      '<div class="code-timer">验证码 3 分钟内有效，剩余 <span id="codeSeconds">'+ Math.max(0, Math.floor((_authExpireAt-Date.now())/1000)) +'</span> 秒</div>'+
+    '</div>'+
+    '<div class="code-actions">'+
+      '<button class="btn auth-ghost" onclick="authCodeRefresh()">🔄 刷新</button>'+
+      '<button class="btn auth-gray" onclick="authCodeCancel()">取消</button>'+
+    '</div>'+
+    '<div class="code-tip">验证码 3 分钟内有效，请在手机端输入上方数字</div>';
+  // 启动秒级倒计时
+  if(_authTickTimer) clearInterval(_authTickTimer);
+  _authTickTimer = setInterval(function(){
+    var el = document.getElementById('codeSeconds');
+    if(!el){ if(_authTickTimer){ clearInterval(_authTickTimer); _authTickTimer=null; } return; }
+    var left = Math.max(0, Math.floor((_authExpireAt-Date.now())/1000));
+    el.textContent = left;
+    if(left<=0){ authCodeCancel(); }
+  }, 1000);
+}
+var _authTickTimer = null;
+function authCodeRefresh(){
+  // 清掉旧的 pendingAuth
+  if(_authCurrentCode){
+    var s = authLoad();
+    if(s.pendingAuth && s.pendingAuth[_authCurrentCode]) delete s.pendingAuth[_authCurrentCode];
+    authSave(s);
+  }
+  authCodeStart();
+}
+function authCodeCancel(){
+  if(_authCurrentCode){
+    var s = authLoad();
+    if(s.pendingAuth && s.pendingAuth[_authCurrentCode]) delete s.pendingAuth[_authCurrentCode];
+    if(s.authorized && _authCurrentDev && s.authorized[_authCurrentDev]) delete s.authorized[_authCurrentDev];
+    authSave(s);
+  }
+  _authClearPolling();
+  if(_authTickTimer){ clearInterval(_authTickTimer); _authTickTimer=null; }
+  // 回到初始状态
+  authSwitch('code');
+}
+function _authPoll(){
+  if(!_authCurrentCode || !_authCurrentDev) return;
+  var s = authLoad();
+  var pa = s.pendingAuth && s.pendingAuth[_authCurrentCode];
+  // pendingAuth 已被外部删除
+  if(!pa){
+    _authClearPolling();
+    if(_authTickTimer){ clearInterval(_authTickTimer); _authTickTimer=null; }
+    authSwitch('code');
+    return;
+  }
+  // 过期检查（以 localStorage 实时数据为准）
+  if(pa.expires < Date.now()){
+    authCodeCancel();
+    toast('验证码已过期，请重新开始');
+    return;
+  }
+  // 检查 authorized
+  if(s.authorized && s.authorized[_authCurrentDev]){
+    var rec = s.authorized[_authCurrentDev];
+    var user = rec.user;
+    if(s.users && s.users[user]){
+      // 清理 pendingAuth 和 authorized
+      if(s.pendingAuth && s.pendingAuth[_authCurrentCode]) delete s.pendingAuth[_authCurrentCode];
+      if(s.authorized && s.authorized[_authCurrentDev]) delete s.authorized[_authCurrentDev];
+      s.current = user; authSave(s);
+      _authClearPolling();
+      if(_authTickTimer){ clearInterval(_authTickTimer); _authTickTimer=null; }
+      authShow();
+      toast('✅ 手机已授权，已登录为 '+user);
+      return;
+    }else{
+      // 授权用户已不存在
+      delete s.authorized[_authCurrentDev]; authSave(s);
+    }
   }
 }
 function authDoRegister(){
@@ -1407,7 +1617,7 @@ function authDoRegister(){
   var p=((document.getElementById('regP')||{}).value||'');
   var p2=((document.getElementById('regP2')||{}).value||'');
   var inv=((document.getElementById('regI')||{}).value||'').trim().toUpperCase();
-  if(!/^[A-Za-z0-9_]{3,20}$/.test(u)){ toast('账号需 3-20 字符（字母/数字/下划线）'); return; }
+  if(!/^[A-Za-z0-9]{3,20}$/.test(u)){ toast('账号需 3-20 字符（字母/数字自由组合）'); return; }
   if(p.length<4){ toast('密码至少 4 位'); return; }
   if(p!==p2){ toast('两次密码不一致'); return; }
   var s = authLoad();
@@ -1441,18 +1651,6 @@ function authDoLogin(){
   s.current = u; authSave(s); authShow(); toast('登录成功');
   seedEngIfEmpty();
 }
-function authDoLoginByCode(){
-  var c=((document.getElementById('loginC')||{}).value||'').trim();
-  if(!/^\d{4}$/.test(c)){ toast('请输入 4 位数字验证码'); return; }
-  var s = authLoad();
-  if(!s.codes || !s.codes[c]){ toast('验证码无效或已过期'); return; }
-  if(s.codes[c].expires < Date.now()){ delete s.codes[c]; authSave(s); toast('验证码已过期'); return; }
-  var u = s.codes[c].user;
-  if(!s.users || !s.users[u]){ toast('对应账号已不存在'); return; }
-  delete s.codes[c];
-  s.current = u; authSave(s); authShow(); toast('已通过验证码登录');
-  seedEngIfEmpty();
-}
 function authLogout(){
   if(!confirm('确定要登出吗？')) return;
   var s = authLoad(); s.current=null; authSave(s);
@@ -1482,32 +1680,13 @@ function openAdminPanel(){
     });
   }
   if(!s.invites || !Object.keys(s.invites).length) inviteList += '<div style="text-align:center;color:#aaa;font-size:12px;padding:8px">暂无邀请码</div>';
-  inviteList += '<button class="btn accent" style="width:100%;margin-top:6px" onclick="adminGenInvite()">＋ 生成新的邀请码</button></div>';
-  // 验证码列表
-  var codeList = '<div style="margin:8px 0">';
-  if(s.codes){
-    Object.keys(s.codes).forEach(function(c){
-      var r = s.codes[c];
-      var min = Math.max(0, Math.floor((r.expires-Date.now())/60000));
-      var shareUrl = _buildShareUrl(r.user, c);
-      codeList += '<div class="invite-row" style="flex-direction:column;align-items:stretch;gap:6px">'+
-        '<div style="display:flex;align-items:center;gap:6px">'+
-        '<span class="code">'+esc(c)+'</span><span class="ttl">→ '+esc(r.user)+' · '+min+' 分</span>'+
-        '<button class="btn ghost" onclick="adminCopy(\''+esc(shareUrl).replace(/'/g,"\\'")+'\')">复制链接</button>'+
-        '<button class="btn bad" onclick="adminDelCode(\''+esc(c)+'\')">删除</button>'+
-        '</div>'+
-        '<div style="font-size:11px;color:#888;word-break:break-all;background:#fff;padding:6px 8px;border-radius:6px">'+esc(shareUrl)+'</div>'+
-        '</div>';
-    });
-  }
-  if(!s.codes || !Object.keys(s.codes).length) codeList += '<div style="text-align:center;color:#aaa;font-size:12px;padding:8px">暂无验证码（点击下方生成后会自动复制分享链接，可发到手机/微信）</div>';
-  codeList += '<button class="btn accent" style="width:100%;margin-top:6px" onclick="adminGenCode()">＋ 生成 4 位验证码（自动复制分享链接）</button></div>';
+  inviteList += '<button class="btn accent" style="width:100%;margin-top:6px" onclick="adminGenInvite()">＋ 生成新的 6 位邀请码</button></div>';
   gm(
     '<div class="gm-head"><div class="gm-title">⚙ 账号管理（管理员）</div><button class="gm-close" onclick="closeGm()">✕</button></div>'+
     '<div style="font-size:14px;font-weight:700;margin:8px 0">📋 账号列表 ('+Object.keys(users).length+')</div>'+
     '<table class="admin-table"><thead><tr><th>账号</th><th>注册</th><th>操作</th></tr></thead><tbody>'+userRows+'</tbody></table>'+
-    '<div style="font-size:14px;font-weight:700;margin:14px 0 4px">🎫 邀请码</div>'+inviteList+
-    '<div style="font-size:14px;font-weight:700;margin:14px 0 4px">🔢 4 位验证码（手机扫码输入）</div>'+codeList
+    '<div style="font-size:14px;font-weight:700;margin:14px 0 4px">🎫 6 位邀请码</div>'+inviteList+
+    '<p class="muted-note" style="margin-top:10px">说明：验证码授权无需管理员介入，每个已登录用户都能在「🔢 授权电脑」入口为其他设备授权。</p>'
   );
 }
 function adminChpass(u){
@@ -1540,21 +1719,47 @@ function adminDelInvite(inv){
 function adminCopy(text){
   try{ navigator.clipboard.writeText(text); toast('已复制到剪贴板'); }catch(e){ toast('复制失败，手动复制：'+text); }
 }
-function adminGenCode(){
+
+/* ====== 手机端：任何已登录用户都可以为电脑端授权 ====== */
+function openMobileAuth(){
+  if(!_currentUser){ toast('请先登录'); return; }
   var s = authLoad();
-  s.codes = s.codes || {};
-  var c;
-  do { c = authGenCode4(); } while(s.codes[c]);
-  s.codes[c] = { user: _currentUser, createdAt:Date.now(), expires: Date.now()+5*60*1000 };
-  authSave(s);
-  // 同时生成跨设备分享链接
-  var shareUrl = _buildShareUrl(_currentUser, c);
-  try{ navigator.clipboard.writeText(shareUrl); }catch(e){}
-  toast('已生成验证码 '+c+'（5 分钟有效），跨设备分享链接已复制');
-  openAdminPanel();
+  var pendings = [];
+  if(s.pendingAuth){
+    Object.keys(s.pendingAuth).forEach(function(c){
+      if(s.pendingAuth[c].status==='waiting' && s.pendingAuth[c].expires>Date.now()){
+        pendings.push({code:c, dev:s.pendingAuth[c].deviceId, left:Math.floor((s.pendingAuth[c].expires-Date.now())/1000)});
+      }
+    });
+  }
+  var body =
+    '<div style="font-size:14px;color:#666;line-height:1.6;margin-bottom:10px">电脑端会显示一个 4 位数字验证码。在下方输入该数字，即可授权电脑以您的账号<b>「'+esc(_currentUser)+'」</b>登录。</div>'+
+    '<label class="fld">输入 4 位数字验证码</label>'+
+    '<input id="mAuthCode" class="auth-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="例如 7241" style="font-size:24px;text-align:center;letter-spacing:8px;font-weight:700">'+
+    '<button class="btn auth-primary" onclick="mobileDoAuth()">✅ 授权该电脑</button>'+
+    (pendings.length?'<div style="margin-top:14px;padding:10px;background:#f5f5f5;border-radius:8px;font-size:12px;color:#666">📡 当前有 '+pendings.length+' 个待授权请求<br>（设备ID：'+pendings.map(function(p){return esc(p.dev.slice(0,16));}).join('、')+'）</div>':'');
+  gm('<div class="gm-head"><div class="gm-title">🔢 授权电脑登录</div><button class="gm-close" onclick="closeGm()">✕</button></div>'+body);
+  setTimeout(function(){ var i=document.getElementById('mAuthCode'); if(i) i.focus(); }, 100);
 }
-function adminDelCode(c){
-  var s = authLoad(); if(s.codes){ delete s.codes[c]; authSave(s); } openAdminPanel();
+function mobileDoAuth(){
+  if(!_currentUser){ toast('请先登录'); return; }
+  var code = (document.getElementById('mAuthCode')||{}).value || '';
+  code = code.trim();
+  if(!/^\d{4}$/.test(code)){ toast('请输入 4 位数字'); return; }
+  var s = authLoad();
+  s.pendingAuth = s.pendingAuth || {};
+  s.authorized = s.authorized || {};
+  if(!s.pendingAuth[code]){ toast('该验证码不存在或已过期'); return; }
+  var pa = s.pendingAuth[code];
+  if(pa.expires < Date.now()){ delete s.pendingAuth[code]; authSave(s); toast('验证码已过期'); return; }
+  if(pa.status !== 'waiting'){ toast('该验证码已被处理'); return; }
+  // 写入授权
+  s.authorized[pa.deviceId] = { code: code, user: _currentUser, at: Date.now() };
+  pa.status = 'authorized';
+  s.pendingAuth[code] = pa;
+  authSave(s);
+  toast('✅ 已授权，电脑端即将自动登录为 '+_currentUser);
+  closeGm();
 }
 
 /* ===================== 种子数据 ===================== */
@@ -1569,7 +1774,7 @@ function seedEngIfEmpty(){
   }
 }
 
-/* ===================== URL 验证码（跨设备：管理员生成链接，手机打开即登录） ===================== */
+/* ===================== URL 验证码（跨设备：手机打开链接，电脑自动登录） ===================== */
 var _GE_PEPPER = 'ge-pepper-2026-v2';
 function _strHash(s){
   // FNV-1a 32-bit
@@ -1584,6 +1789,8 @@ function _buildShareUrl(user, code){
   return u;
 }
 function checkUrlCode(){
+  // 跨设备 URL 分享：手机扫码打开链接 → 自动登录
+  // 注意：扫码授权的 4 位码是本设备的，电脑端用 localStorage 轮询；URL 分享是辅助通道
   var sp=new URLSearchParams(location.search);
   var u=sp.get('u'), c=sp.get('c'), t=sp.get('t');
   if(u && c && t){
@@ -1591,7 +1798,6 @@ function checkUrlCode(){
       var s=authLoad();
       if(s.users && s.users[u]){
         s.current=u; authSave(s);
-        // 清掉 URL 参数
         history.replaceState(null,'',location.pathname);
         toast('✅ 通过分享链接登录为 '+u);
         return true;
@@ -1602,27 +1808,31 @@ function checkUrlCode(){
       toast('分享链接无效或被篡改');
     }
   }
-  // 兼容 #code=XXXX 旧格式（同设备 localStorage 验证码）
-  var m=(location.hash||'').match(/code=(\d{4})/);
-  if(m){
-    var s=authLoad();
-    if(s.codes && s.codes[m[1]] && s.codes[m[1]].expires>Date.now()){
-      var u2=s.codes[m[1]].user;
-      delete s.codes[m[1]]; s.current=u2; authSave(s);
-      location.hash=''; toast('已通过链接验证码登录');
-      return true;
-    }
-  }
   return false;
 }
 
 /* ===================== 初始化 ===================== */
 (function(){
-  // 清理过期验证码/邀请码
+  // 清理过期邀请码、待授权、已授权
   var s = authLoad();
   var dirty = false;
-  if(s.codes){ Object.keys(s.codes).forEach(function(c){ if(s.codes[c].expires<Date.now()){ delete s.codes[c]; dirty=true; } }); }
-  if(s.invites){ Object.keys(s.invites).forEach(function(inv){ if(s.invites[inv].expires && s.invites[inv].expires<Date.now()){ delete s.invites[inv]; dirty=true; } }); }
+  var now = Date.now();
+  if(s.invites){
+    Object.keys(s.invites).forEach(function(inv){
+      if(s.invites[inv].expires && s.invites[inv].expires < now){ delete s.invites[inv]; dirty=true; }
+    });
+  }
+  if(s.pendingAuth){
+    Object.keys(s.pendingAuth).forEach(function(c){
+      if(s.pendingAuth[c].expires < now){ delete s.pendingAuth[c]; dirty=true; }
+    });
+  }
+  // 清理 1 小时前的授权记录
+  if(s.authorized){
+    Object.keys(s.authorized).forEach(function(d){
+      if(now - (s.authorized[d].at||0) > 60*60*1000){ delete s.authorized[d]; dirty=true; }
+    });
+  }
   if(dirty) authSave(s);
   checkUrlCode();
   authShow();
