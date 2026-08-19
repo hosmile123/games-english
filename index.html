@@ -956,11 +956,11 @@ function cdStart(){
   _cd={ list:list.slice(), cat:cat, idx:-1, score:0, timeLeft:_cdSec, endTime:0, timer:null, words:[] };
   cdNext(true);
 }
-function cdNext(fresh){
+function cdNext(fresh, isSkip){
   if(!_cd) return;
   if(_cd.timer){ clearInterval(_cd.timer); _cd.timer=null; }
   if(fresh){ _cd.timeLeft=_cdSec; _cd.endTime=Date.now()+_cdSec*1000; }
-  if(!fresh) _speak('跳过','zh-CN');
+  if(!fresh && isSkip) _speak('跳过','zh-CN');
   if(!fresh){
     if(_cd.idx>=0) _cd.list.splice(_cd.idx,1);
     if(!_cd.list.length) _cd.list=CHARADES_CATS[_cd.cat].slice();
@@ -975,7 +975,7 @@ function cdNext(fresh){
     '<div class="cd-word">'+esc(word)+'</div>'+
     '<div class="row" style="margin-top:8px">'+
       '<button class="btn ok" style="flex:1;padding:18px 8px;font-size:20px" onclick="cdCorrect()">✅ 猜对了</button>'+
-      '<button class="btn gray" style="flex:1;padding:18px 8px;font-size:20px" onclick="cdNext(false)">⏭️ 跳过</button>'+
+      '<button class="btn gray" style="flex:1;padding:18px 8px;font-size:20px" onclick="cdNext(false,true)">⏭️ 跳过</button>'+
     '</div>'+
     '<button id="cdStopBtn" class="btn bad" style="width:auto;min-width:120px;margin:10px auto 0;display:block;padding:8px 18px;font-size:13px" onclick="cdStop()">结束本轮</button>';
   _cd.timer=setInterval(function(){
@@ -983,7 +983,7 @@ function cdNext(fresh){
     _cd.timeLeft=Math.max(0,Math.round((_cd.endTime-Date.now())/1000));
     var t=document.getElementById('cdTimer'); if(t) t.textContent=_cd.timeLeft;
     var tl=_cd.timeLeft;
-    if(tl>0 && (tl===60||tl===30||tl===10||tl===5||tl===3||tl===2||tl===1)) _speak('剩余 '+tl+' 秒','zh-CN');
+    if(tl>0 && (tl===60||tl===30||tl===10)) _speak('剩余 '+tl+' 秒','zh-CN');
     if(_cd.timeLeft<=0){ clearInterval(_cd.timer); _cd.timer=null; cdEnd(); }
   },1000);
 }
