@@ -175,6 +175,366 @@ label.fld{ font-size:13px; color:#666; display:block; margin:12px 0 4px;}
 .invite-row .code{ font-size:18px; font-weight:800; color:var(--primary); letter-spacing:2px; flex:1; word-break:break-all;}
 .invite-row .ttl{ font-size:11px; color:var(--muted);}
 </style>
+<style id="aurora-ui">
+/* ════════════════════════════════════════════════════════════════
+   Aurora UI · 核心覆盖层 v1.0
+   把任意单文件 HTML 站点的既有元素映射到「柔光极光」视觉语言。
+   原则：只改 颜色 / 圆角 / 描边 / 阴影 / 玻璃 / 字体色，
+        绝不改 display / position / width / height / flex  —— 位置与功能不变。
+   零侵入：整段包在单个 style 块里（id = aurora-ui），删掉即 100% 还原。
+   ════════════════════════════════════════════════════════════════ */
+
+/* ---------- ① 设计令牌 ---------- */
+:root{
+  --au-bg:#EEF3FB;
+  --au-surface:rgba(255,255,255,.72);
+  --au-surface-strong:rgba(255,255,255,.86);
+  --au-surface-soft:rgba(255,255,255,.5);
+  --au-surface-solid:#FFFFFF;
+  --au-border:rgba(255,255,255,.9);
+  --au-border-line:rgba(123,142,180,.14);
+  --au-border-soft:rgba(123,142,180,.10);
+
+  --au-text:#2B3445;
+  --au-text-2:#7A879B;
+  --au-text-3:#A8B2C1;
+  --au-text-inv:#FFFFFF;
+
+  --au-blue:#4C8DF6;
+  --au-blue-deep:#3A72D8;
+  --au-blue-soft:#EAF1FE;
+  --au-violet:#8B7BE8;
+  --au-violet-soft:#F0EDFD;
+  --au-grad:linear-gradient(135deg,#5B8DEF,#7B6BE8);
+
+  --au-red:#F2705C;    --au-red-soft:#FDEEEA;
+  --au-amber:#F0A64B;  --au-amber-soft:#FDF3E4;
+  --au-green:#4CC38A;  --au-green-soft:#EAF7F1;
+  --au-cyan:#4BB8E8;   --au-cyan-soft:#E8F5FC;
+  --au-yellow:#F5B93F; --au-yellow-soft:#FEF6E4;
+  --au-purple:#8B7BE8; --au-purple-soft:#F0EDFD;
+  --au-gray:#9AA6B8;   --au-gray-soft:#F0F3F8;
+
+  --au-font:"PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",
+            -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+
+  --au-r-pill:999px; --au-r-lg:22px; --au-r-md:16px;
+  --au-r-icon:14px;  --au-r-sm:12px; --au-r-xs:8px;
+
+  --au-sh-xs:0 1px 2px rgba(90,120,170,.05);
+  --au-sh-sm:0 4px 16px rgba(90,120,170,.06);
+  --au-sh-md:0 8px 24px rgba(90,120,170,.10);
+  --au-sh-lg:0 16px 40px rgba(90,120,170,.14);
+  --au-sh-btn:0 6px 16px rgba(91,141,239,.28);
+
+  --au-ease:cubic-bezier(.34,.1,.25,1);
+  --au-t:180ms var(--au-ease);
+  --au-t-fast:140ms var(--au-ease);
+}
+
+/* ---------- ② 页面底：柔彩 + 四色光晕 ---------- */
+html{
+  background-color:var(--au-bg) !important;
+  background-image:
+    radial-gradient(900px 620px at 8% -6%,  rgba(126,180,255,.38), transparent 62%),
+    radial-gradient(760px 560px at 96% 4%,  rgba(214,168,255,.34), transparent 60%),
+    radial-gradient(820px 620px at 88% 98%, rgba(140,232,205,.30), transparent 62%),
+    radial-gradient(700px 520px at 4% 92%,  rgba(255,214,180,.28), transparent 62%) !important;
+  background-attachment:fixed !important;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+body{
+  background:transparent !important;
+  color:var(--au-text);
+  font-family:var(--au-font);
+}
+/* 压掉站点自带的整屏不透明底色/渐变层（不动其定位与层级） */
+body::before, body::after{
+  background-image:none !important;
+}
+
+/* ---------- ③ 文字层次（靠明度，不靠粗细） ---------- */
+h1,h2,h3,h4,h5{ color:var(--au-text) !important; font-weight:600; letter-spacing:.2px; }
+p,span,div,li,td,label{ color:inherit; }
+a{ color:var(--au-blue); }
+
+/* ---------- ④ 玻璃卡片族 ---------- */
+.card, .panel, .pcard, .stat-card, .prod-card, .cat-card, .game-card,
+.client-card, .client-card-inner, .login-card, .auth-card, .auth-box,
+.modal-card, .modal-box, .modal-form, .user-card, .student-card,
+.family-card, .word-card, .sentence-card, .step-card, .mood-card, .char-card,
+.eng-card, .plan-card, .td-card, .ko-modal-box, .err-modal, .info-card, .kpi-card{
+  background:var(--au-surface) !important;
+  border:1px solid var(--au-border) !important;
+  border-radius:var(--au-r-lg) !important;
+  box-shadow:var(--au-sh-sm) !important;
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+}
+/* 内层小卡走 16px，避免"一个页面 3 种圆角" */
+.client-card-inner, .word-card, .sentence-card, .step-card, .mood-card, .char-card{
+  border-radius:var(--au-r-md) !important;
+}
+
+/* ---------- ⑤ 按钮 ---------- */
+button, .btn, input[type=button], input[type=submit], [class*="btn-"]{
+  border-radius:var(--au-r-sm) !important;
+  font-family:inherit;
+}
+/* 主按钮 → 主渐变 */
+.btn-primary, .btn.main, button.primary, .primary,
+button[type=submit]:not(.btn-outline):not(.btn-ghost):not(.ghost),
+.login-btn, .auth-btn, .auth-primary, .pm-btn, .btn.btn-primary{
+  background:var(--au-grad) !important;
+  border-color:transparent !important;
+  color:#fff !important;
+  box-shadow:var(--au-sh-btn) !important;
+}
+/* 次按钮 → 白底细描边 */
+.btn-outline, .btn.ghost, button.ghost, .auth-ghost, .auth-gray, .btn-ghost{
+  background:var(--au-surface-solid) !important;
+  border:1px solid var(--au-border-line) !important;
+  color:var(--au-text) !important;
+  box-shadow:var(--au-sh-xs) !important;
+}
+/* 危险 / 成功 */
+.btn-danger, .btn-delete{
+  background:var(--au-red-soft) !important; color:var(--au-red) !important;
+  border-color:transparent !important;
+}
+.btn-ok, .btn-success{
+  background:var(--au-green-soft) !important; color:var(--au-green) !important;
+  border-color:transparent !important;
+}
+.btn-link{ background:none !important; color:var(--au-blue) !important; box-shadow:none !important; }
+
+/* ---------- ⑥ 表单控件 ---------- */
+input[type=text], input[type=password], input[type=email], input[type=number],
+input[type=search], input[type=tel], input[type=url], input[type=date],
+input:not([type]), select, textarea,
+.form-control, .form-input, .auth-input{
+  background:var(--au-surface-solid) !important;
+  border:1px solid var(--au-border-line) !important;
+  border-radius:var(--au-r-sm) !important;
+  color:var(--au-text) !important;
+}
+input::placeholder, textarea::placeholder{ color:var(--au-text-3) !important; }
+input:focus, select:focus, textarea:focus,
+.form-control:focus, .form-input:focus{
+  border-color:var(--au-blue) !important;
+  box-shadow:0 0 0 3px rgba(76,141,246,.14) !important;
+  outline:none !important;
+}
+
+/* ---------- ⑦ 数据表 ---------- */
+table{ border-collapse:separate; border-spacing:0; }
+table thead th{
+  background:rgba(255,255,255,.6) !important;
+  color:var(--au-text-2) !important;
+  font-size:11.5px !important; font-weight:600 !important;
+  border-bottom:1px solid var(--au-border-line) !important;
+}
+table tbody td{
+  border-bottom:1px solid rgba(123,142,180,.08) !important;
+  color:var(--au-text) !important;
+}
+table tbody tr:hover td{ background:rgba(255,255,255,.62) !important; }
+
+/* ---------- ⑧ 胶囊标签 / 徽章 ---------- */
+.tag, .chip, .pill, .badge, .client-chip, .client-tag-mini, .level-badge,
+.client-tag-badge, .cat-tag, .status-tag{
+  border-radius:var(--au-r-pill) !important;
+  border-width:0 !important;
+  font-weight:600;
+}
+
+/* ---------- ⑨ 侧栏 / 导航 ---------- */
+.sidebar, .nav, .mainNav, .main-nav, aside.sidebar{
+  background:var(--au-surface-strong) !important;
+  border-right:1px solid var(--au-border-line) !important;
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+}
+.nav-item, .nav-link, .sidebar a, .menu-item{
+  border-radius:var(--au-r-sm) !important;
+  color:var(--au-text-2);
+  transition:all var(--au-t-fast);
+}
+.nav-item:hover, .nav-link:hover, .sidebar a:hover, .menu-item:hover{
+  background:rgba(255,255,255,.72) !important;
+  color:var(--au-text) !important;
+}
+.nav-item.active, .nav-link.active, .nav-item.on, .nav-link.on,
+.nav-item.is-active, .menu-item.active{
+  background:var(--au-grad) !important;
+  color:#fff !important; font-weight:600;
+  box-shadow:var(--au-sh-btn) !important;
+}
+
+/* ---------- ⑩ 选中态 / 分段控件 / 标签页 ---------- */
+.tab.active, .tab.on, .tabs .active, .tabs .on,
+.login-tab.active, .login-tab.on, .login-tabs .active, .login-tabs .on,
+.auth-tab.active, .auth-tab.on, .auth-tabs .active, .auth-tabs .on,
+.seg-item.active, .seg-item.on{
+  background:var(--au-surface-solid) !important;
+  color:var(--au-blue) !important;
+  border-radius:9px !important;
+  box-shadow:var(--au-sh-xs) !important;
+  font-weight:600 !important;
+}
+.tabs, .login-tabs, .auth-tabs, .seg{
+  background:rgba(123,142,180,.10) !important;
+  border-radius:var(--au-r-sm) !important;
+}
+
+/* ---------- ⑪ 弹窗遮罩 ---------- */
+.modal-mask, .modal-overlay, .mask, .overlay, .auth-mask{
+  background:rgba(43,52,69,.28) !important;
+  backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+}
+.modal-mask .card, .modal-overlay .card, .modal-card, .modal-box, .ko-modal-box{
+  background:var(--au-surface-strong) !important;
+  border:1px solid var(--au-border) !important;
+  border-radius:var(--au-r-lg) !important;
+  box-shadow:var(--au-sh-lg) !important;
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+}
+
+/* ---------- ⑫ KPI 数字 ---------- */
+.cs-num, .kpi-value, .stat-num, .num-big, .metric, .big-num{
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.5px;
+  color:var(--au-text) !important;
+}
+
+/* ---------- ⑬ 图标按钮 ---------- */
+.client-icon-btn, .icon-btn, .btn-icon{
+  border-radius:9px !important;
+  border:1px solid var(--au-border-line) !important;
+  background:rgba(255,255,255,.7) !important;
+  color:var(--au-text-2) !important;
+}
+.client-icon-btn:hover, .icon-btn:hover, .btn-icon:hover{
+  color:var(--au-blue) !important;
+  border-color:rgba(76,141,246,.4) !important;
+}
+
+/* ---------- ⑭ 滚动条 ---------- */
+::-webkit-scrollbar{ width:8px; height:8px; }
+::-webkit-scrollbar-thumb{ background:rgba(123,142,180,.26); border-radius:999px; }
+::-webkit-scrollbar-thumb:hover{ background:rgba(123,142,180,.42); }
+::-webkit-scrollbar-track{ background:transparent; }
+
+/* ---------- ⑮ 焦点可见（无障碍） ---------- */
+:focus-visible{ outline:2px solid var(--au-blue); outline-offset:2px; }
+
+/* ---------- ⑯ 动效克制 ---------- */
+.card:hover, .client-card:hover, .prod-card:hover, .stat-card:hover{
+  transform:translateY(-2px);
+  box-shadow:var(--au-sh-md) !important;
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{ transition:none !important; animation:none !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   Aurora UI · 游戏＋英语 适配层
+   ════════════════════════════════════════════════════════════════ */
+
+/* ---------- ① 令牌 → 极光值 ---------- */
+:root{
+  --primary:#4C8DF6;    --primary2:#8B7BE8;   --accent:#8B7BE8;
+  --bg:#EEF3FB;         --card:rgba(255,255,255,.72);
+  --text:#2B3445;       --muted:#7A879B;
+  --ok:#4CC38A;         --bad:#F2705C;
+  --line:rgba(123,142,180,.14);
+}
+
+/* ---------- ② 登录屏：满屏紫 → 极光柔彩光晕（不透明，避免主界面穿帮） ---------- */
+.auth-mask{
+  background-color:#EEF3FB !important;
+  background-image:
+    radial-gradient(900px 620px at 8% -6%,  rgba(126,180,255,.38), transparent 62%),
+    radial-gradient(760px 560px at 96% 4%,  rgba(214,168,255,.34), transparent 60%),
+    radial-gradient(820px 620px at 88% 98%, rgba(140,232,205,.30), transparent 62%),
+    radial-gradient(700px 520px at 4% 92%,  rgba(255,214,180,.28), transparent 62%) !important;
+  background-attachment:fixed !important;
+}
+.auth-box{
+  background:rgba(255,255,255,.86) !important;
+  border:1px solid rgba(255,255,255,.9) !important;
+  border-radius:22px !important;
+  box-shadow:0 16px 40px rgba(90,120,170,.14) !important;
+  backdrop-filter:blur(24px) saturate(180%);
+  -webkit-backdrop-filter:blur(24px) saturate(180%);
+}
+.auth-tabs{ background:rgba(123,142,180,.10) !important; border-radius:12px !important; }
+.auth-tab{ border-radius:9px !important; color:var(--au-text-2) !important; }
+.auth-tab.active, .auth-tab.on{
+  background:#fff !important; color:var(--au-blue) !important;
+  box-shadow:0 1px 2px rgba(90,120,170,.05) !important;
+}
+
+/* ---------- ③ 输入控件 ---------- */
+.auth-input, input, select, textarea{
+  background:#fff !important;
+  border:1px solid rgba(123,142,180,.14) !important;
+  border-radius:12px !important;
+  color:var(--au-text) !important;
+}
+.auth-input:focus, input:focus, select:focus, textarea:focus{
+  border-color:var(--au-blue) !important;
+  box-shadow:0 0 0 3px rgba(76,141,246,.14) !important;
+}
+
+/* ---------- ④ 按钮 ---------- */
+.auth-primary, .btn-primary, button[type=submit]{
+  background:var(--au-grad) !important;
+  border-color:transparent !important;
+  color:#fff !important;
+  border-radius:12px !important;
+  box-shadow:var(--au-sh-btn) !important;
+}
+.auth-ghost, .auth-gray, .btn-outline{
+  background:#fff !important;
+  border:1px solid rgba(123,142,180,.14) !important;
+  color:var(--au-text) !important;
+  border-radius:12px !important;
+  box-shadow:0 1px 2px rgba(90,120,170,.05) !important;
+}
+
+/* ---------- ⑤ 卡片族 ---------- */
+.eng-card, .game-card, .plan-card, .td-card, .card{
+  background:rgba(255,255,255,.72) !important;
+  border:1px solid rgba(255,255,255,.9) !important;
+  border-radius:22px !important;
+  box-shadow:0 4px 16px rgba(90,120,170,.06) !important;
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+}
+.eng-card:hover, .game-card:hover, .plan-card:hover, .td-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 24px rgba(90,120,170,.10) !important;
+}
+
+/* ---------- ⑥ 顶部工具条 / 导航 ---------- */
+#userBar, .user-bar, .topbar, header{
+  background:rgba(255,255,255,.86) !important;
+  border-bottom:1px solid rgba(123,142,180,.14) !important;
+  backdrop-filter:blur(20px) saturate(180%);
+}
+.deck-btn{
+  border-radius:12px !important;
+  background:var(--au-grad) !important;
+  color:#fff !important;
+  border-color:transparent !important;
+  box-shadow:var(--au-sh-btn) !important;
+}
+
+</style>
 </head>
 <body>
 
